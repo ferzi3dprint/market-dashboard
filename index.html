@@ -1,0 +1,783 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Áttekintő</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7; --surface: #fcfcfb; --surface-2: #f0efec; --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+  --grid: #e1e0d9; --axis: #c3c2b7; --ring: rgba(11,11,11,0.10);
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --s6: #008300;
+  --good: #0ca30c; --good-text: #006300; --warning: #fab219; --serious: #ec835a; --critical: #d03b3b;
+  --star-bg: #e8f1fc; --orange-bg: #fdeee6;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --surface-2: #383835; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --ring: rgba(255,255,255,0.10);
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #008300;
+    --good-text: #0ca30c; --star-bg: #16263a; --orange-bg: #3a2216;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d; --surface: #1a1a19; --surface-2: #383835; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+  --grid: #2c2c2a; --axis: #383835; --ring: rgba(255,255,255,0.10);
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #008300;
+  --good-text: #0ca30c; --star-bg: #16263a; --orange-bg: #3a2216;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--page); color: var(--ink); }
+body { font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; -webkit-text-size-adjust: 100%; }
+.wrap { max-width: 1080px; margin: 0 auto; padding: 16px; }
+header.top { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+h1 { font-size: 20px; margin: 4px 0; }
+h2 { font-size: 17px; margin: 28px 0 10px; }
+h3 { font-size: 15px; margin: 0 0 6px; }
+.muted { color: var(--muted); } .ink2 { color: var(--ink-2); }
+.card { background: var(--surface); border: 1px solid var(--ring); border-radius: 12px; padding: 14px; }
+.grid { display: grid; gap: 12px; }
+.tiles { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.cards { grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); }
+.tile .lbl { font-size: 13px; color: var(--ink-2); }
+.tile .val { font-size: 24px; font-weight: 600; margin-top: 2px; }
+.tile .sub { font-size: 13px; color: var(--ink-2); }
+.up { color: var(--good-text); } .down { color: var(--critical); }
+button, .btn { font: inherit; border: 1px solid var(--ring); background: var(--surface); color: var(--ink); border-radius: 8px;
+  padding: 8px 12px; cursor: pointer; min-height: 40px; }
+button.primary { background: var(--s1); color: #fff; border-color: transparent; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0; }
+.chip[aria-pressed="true"] { background: var(--surface-2); font-weight: 600; }
+.chart-box { position: relative; height: 240px; }
+.donut-box { position: relative; height: 170px; }
+.legend-list { list-style: none; padding: 0; margin: 8px 0 0; font-size: 13px; }
+.legend-list li { display: flex; align-items: center; gap: 6px; padding: 2px 0; }
+.legend-list .sw { width: 10px; height: 10px; border-radius: 2px; flex: 0 0 auto; }
+.legend-list .pct { margin-left: auto; font-variant-numeric: tabular-nums; }
+.over { color: var(--critical); font-weight: 600; }
+.badge { display: inline-block; font-size: 12px; padding: 1px 7px; border-radius: 99px; border: 1px solid var(--ring); color: var(--ink-2); }
+.badge.crit { border-color: var(--critical); color: var(--critical); }
+.badge.warn { border-color: var(--serious); color: var(--ink); }
+.star { background: var(--star-bg); border-color: var(--s1); }
+.orange { background: var(--orange-bg); border-color: var(--s2); }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; font-size: 13px; margin-top: 8px; }
+.kv dt { color: var(--ink-2); } .kv dd { margin: 0; font-variant-numeric: tabular-nums; }
+.band { margin: 10px 0 4px; }
+.band svg { width: 100%; height: 46px; display: block; }
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+th { color: var(--ink-2); font-weight: 600; cursor: pointer; user-select: none; position: sticky; top: 0; background: var(--surface); }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.ai { white-space: pre-wrap; font-size: 14px; }
+input[type=password], input[type=search] { font: inherit; width: 100%; padding: 10px; border-radius: 8px;
+  border: 1px solid var(--axis); background: var(--surface); color: var(--ink); min-height: 44px; }
+#login { max-width: 380px; margin: 12vh auto; }
+#login label.chk { display: flex; gap: 8px; align-items: center; margin: 12px 0; }
+#err { color: var(--critical); min-height: 1.4em; margin-top: 8px; }
+footer { margin: 36px 0 24px; font-size: 13px; color: var(--ink-2); }
+.hidden { display: none !important; }
+.quicknav { position: sticky; top: 0; z-index: 5; display: flex; gap: 6px; overflow-x: auto; padding: 8px 0; margin: 8px 0 0;
+  background: var(--page); -webkit-overflow-scrolling: touch; }
+.quicknav a { flex: 0 0 auto; font-size: 13px; color: var(--ink-2); text-decoration: none; border: 1px solid var(--ring);
+  border-radius: 99px; padding: 5px 10px; background: var(--surface); }
+h2 { scroll-margin-top: 56px; }
+.hl .big { font-size: 28px; font-weight: 600; margin: 2px 0 6px; }
+.hl ul { margin: 4px 0 0; padding-left: 18px; font-size: 14px; }
+.hl.good { border-color: var(--good); } .hl.warn { border-color: var(--serious); } .hl.crit { border-color: var(--critical); }
+.chart-box.tall { height: 340px; }
+details.msg { background: var(--surface); border: 1px solid var(--ring); border-radius: 12px; padding: 10px 14px; margin-bottom: 8px; }
+details.msg summary { cursor: pointer; font-weight: 600; }
+details.msg pre, details.more pre { white-space: pre-wrap; font: 13px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; margin: 8px 0 0; }
+details.more { margin-top: 8px; font-size: 13px; } details.more summary { cursor: pointer; color: var(--ink-2); }
+.evlist li { margin: 2px 0; }
+
+.sig li { margin: 4px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section id="login" class="card">
+    <h1>Áttekintő</h1>
+    <p class="ink2">Az adatok titkosítva vannak. Add meg a jelszót a megnyitáshoz.</p>
+    <form id="loginForm" autocomplete="on">
+      <input id="pw" type="password" autocomplete="current-password" placeholder="Jelszó" required>
+      <label class="chk"><input id="remember" type="checkbox"> Emlékezz rám ezen az eszközön</label>
+      <button class="primary" type="submit" id="openBtn">Megnyitás</button>
+      <div id="err" role="alert"></div>
+    </form>
+  </section>
+
+  <main id="app" class="hidden">
+    <header class="top">
+      <div><h1>Portfólió-áttekintő</h1><div class="muted" id="updated"></div></div>
+      <div class="chips">
+        <button id="themeBtn" type="button" aria-label="Világos/sötét mód">🌓 Mód</button>
+        <button id="logoutBtn" type="button">Kijelentkezés</button>
+      </div>
+    </header>
+
+    <nav class="quicknav" aria-label="Gyors navigáció">
+      <a href="#s-kiemelt">Kiemelt</a><a href="#s-attekintes">Áttekintés</a><a href="#s-terv">Havi terv</a>
+      <a href="#s-piac">Piac</a><a href="#s-papirok">Papírjaim · 💳 Vétel rögzítése</a><a href="#s-atgondolando">Átgondolandó</a>
+      <a href="#s-kitettseg">Kitettség</a><a href="#s-belepes">Belépés</a><a href="#s-jeloltek">Jelöltek</a>
+      <a href="#s-etf">ETF-ek</a><a href="#s-nyersanyag">Nyersanyag</a><a href="#s-kina">Kína</a><a href="#s-egyedi">Egyedi</a><a href="#s-esemenyek">Események</a><a href="#s-track">Track record</a>
+      <a href="#s-mi">MI</a><a href="#s-uzenetek">Üzenetek</a>
+    </nav>
+
+    <h2 id="s-kiemelt">⭐ Kiemelt</h2>
+    <div class="grid cards" id="highlights"></div>
+
+    <h2 id="s-attekintes">Áttekintés</h2>
+    <div class="grid tiles" id="tiles"></div>
+    <div class="grid cards" style="margin-top:12px">
+      <div class="card"><h3>Portfólió értéke vs. befektetett összeg</h3><div class="chart-box"><canvas id="valueChart"></canvas></div><div id="valueEmpty" class="muted hidden">Még nincs elég történeti adat.</div></div>
+      <div class="card"><h3>Hozamindex vs. S&amp;P 500 (kezdet = 100)</h3><div class="chart-box"><canvas id="indexChart"></canvas></div><div id="indexEmpty" class="muted hidden">Még nincs elég történeti adat.</div></div>
+    </div>
+
+    <h2 id="s-terv">Havi terv és teljesítmény</h2>
+    <div class="grid cards">
+      <div class="card"><h3>📆 Havi befektetési terv</h3><div id="planBox" class="ink2" style="font-size:14px"></div></div>
+      <div class="card"><h3>🏁 Mag és szatellit vs. S&amp;P 500 (vétel óta)</h3><div id="perfBox" class="ink2" style="font-size:14px"></div></div>
+    </div>
+
+    <h2 id="s-piac">Piac</h2>
+    <div class="grid cards">
+      <div class="card table-wrap"><h3>Piaci pillanatkép <span class="muted" id="marketDate"></span></h3><table id="marketTable"><thead><tr><th>Eszköz</th><th class="num">Utolsó</th><th class="num">1 nap</th><th class="num">5 nap</th></tr></thead><tbody></tbody></table></div>
+      <div class="card"><h3>Szektorok teljesítménye</h3><div class="chips" id="sectorChips"></div><div class="chart-box tall"><canvas id="sectorChart"></canvas></div><div id="sectorEmpty" class="muted hidden">Nincs adat.</div></div>
+      <div class="card"><h3>Heti piaci mozgás <span class="muted" id="weekDate"></span></h3><div class="chart-box tall"><canvas id="weekChart"></canvas></div><div id="weekEmpty" class="muted hidden">A szombati összefoglaló után jelenik meg.</div></div>
+    </div>
+    <div class="card" id="alertsCard" style="margin-top:12px"><h3>⚠️ Nagy napi mozgások a portfólióban</h3><div id="alertsBox" class="ink2"></div></div>
+
+    <h2 id="s-papirok">Saját papírok</h2>
+    <div class="card" id="tradeBar" style="margin-bottom:12px"></div>
+    <div class="grid cards" id="holdings"></div>
+
+    <h2 id="s-atgondolando">⚖️ Eladási jelzések (szigorú)</h2>
+    <div id="signals"></div>
+
+    <h2 id="s-kitettseg">Kitettség</h2>
+    <div class="grid cards" id="exposure"></div>
+    <p class="muted" id="expNote"></p>
+
+    <h2 id="s-belepes">✅ Belépési figyelés</h2>
+    <div class="card"><div class="muted" id="ewMeta"></div><div id="ewBox"></div></div>
+
+    <h2 id="s-jeloltek">Szűrő-jelöltek</h2>
+    <p class="muted" id="screenerInfo"></p>
+    <div class="grid cards" id="topCards"></div>
+    <div class="card" style="margin-top:12px">
+      <div class="chips" id="tierFilter"></div>
+      <input type="search" id="tableSearch" placeholder="Szűrés tickerre, névre, szektorra…" aria-label="Táblázat szűrése">
+      <div class="table-wrap" style="margin-top:8px"><table id="candTable"><thead></thead><tbody></tbody></table></div>
+      <div id="candEmpty" class="muted hidden">Még nincs szűrő-futás.</div>
+    </div>
+
+    <h2 id="s-etf">🧺 ETF-ek a világ minden tájáról (UCITS)</h2>
+    <p class="muted" id="etfInfo"></p>
+    <div class="grid cards">
+      <div class="card"><h3>Beruházási esély (pontszám, 0–100)</h3><div class="chart-box"><canvas id="etfChart"></canvas></div><div id="etfEmpty" class="muted hidden">Nincs átlátható ETF.</div></div>
+    </div>
+    <div class="card table-wrap" style="margin-top:12px"><table id="etfTable"><thead><tr><th>Állapot</th><th>ETF</th><th>Régió / szektor</th><th class="num">Beruházási esély</th><th class="num">Várható hozam</th><th class="num">Együttmozgás S&amp;P-vel</th><th>🌐 Diverzifikáció</th><th class="num">Diszkont</th><th class="num">Lefedve</th><th class="num">P/E (S&amp;P)</th><th class="num">FCF-hozam</th><th>Fázis</th><th class="num">Éves hozam (5 év)</th><th class="num">vs S&amp;P 500 (5 év)</th><th class="num">TER</th><th class="num">Osztalék (12 hó)</th><th>Kitettség / átfedés</th></tr></thead><tbody></tbody></table></div>
+
+    <h2 id="s-nyersanyag">🪙 Nyersanyagok és kötvények</h2>
+    <p class="muted" id="commInfo">Nincs pénzáram, ezért nincs DCF: az inflációval korrigált ár helye a saját 20 éves sávjában (0% = a legolcsóbb), és a belépési fázis. ✅ = olcsó sávban és kedvező fázisban. Tájékoztató – nem vételi javaslat.</p>
+    <div class="card table-wrap"><table id="commTable"><thead><tr><th>Állapot</th><th>Eszköz</th><th class="num">Reálár a 20 éves sávban</th><th class="num">vs hosszú távú átlag</th><th class="num">52 hetes csúcstól</th><th>Fázis</th><th>Hogyan vehető</th></tr></thead><tbody></tbody></table></div>
+    <div class="card ink2" id="commExtra" style="margin-top:12px;font-size:14px"></div>
+
+    <h2 id="s-kina">🇨🇳 Kína</h2>
+    <p class="muted" id="chinaInfo"></p>
+    <div class="card table-wrap"><table id="chinaTable"><thead><tr><th>Állapot</th><th>Cég</th><th class="num">Ár</th><th class="num">Belső érték (bázis)</th><th class="num">Diszkont</th><th class="num">Pont</th><th>Fázis</th><th>Nem teljesül</th></tr></thead><tbody></tbody></table></div>
+
+    <h2 id="s-egyedi">🔎 Egyedi értékelések</h2>
+    <div class="grid cards" id="evalCards"></div>
+
+    <h2 id="s-esemenyek">📅 Jövő hét és közelgő események</h2>
+    <div class="card"><div id="eventsBox"></div></div>
+
+    <h2 id="s-track">📈 Track record</h2>
+    <div class="card"><div class="chart-box"><canvas id="trChart"></canvas></div><div id="trNote" class="muted"></div></div>
+
+    <h2 id="s-mi">🤖 MI-összefoglalók</h2>
+    <div class="grid cards">
+      <div class="card"><h3>Napi összefoglaló</h3><div class="muted" id="aiMeta"></div><div class="ai" id="aiText"></div></div>
+      <div class="card"><h3>Heti összefoglaló</h3><div class="muted" id="aiWeekMeta"></div><div class="ai" id="aiWeekText"></div></div>
+    </div>
+
+    <h2 id="s-uzenetek">📨 Teljes üzenetek</h2>
+    <div id="msgBox"></div>
+
+    <footer id="foot"></footer>
+  </main>
+</div>
+
+<script>
+/*CRYPTO-START*/
+// Visszafejtés a Web Crypto API-val: PBKDF2-SHA256 kulcsszármaztatás + AES-256-GCM.
+const b64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+const toB64 = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)));
+async function deriveKey(password, saltB64, iterations, extractable) {
+  const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey({ name: "PBKDF2", hash: "SHA-256", salt: b64(saltB64), iterations },
+    base, { name: "AES-GCM", length: 256 }, extractable, ["decrypt"]);
+}
+async function importRawKey(rawB64) {
+  return crypto.subtle.importKey("raw", b64(rawB64), { name: "AES-GCM" }, false, ["decrypt"]);
+}
+async function decryptBlob(blob, key) {
+  const pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv: b64(blob.iv) }, key, b64(blob.ct));
+  return JSON.parse(new TextDecoder().decode(pt));
+}
+async function decryptWithPassword(blob, password, extractable) {
+  const key = await deriveKey(password, blob.salt, blob.iterations, extractable);
+  return { data: await decryptBlob(blob, key), key };
+}
+/*CRYPTO-END*/
+
+const KEY_STORE = "dash_key_v1";
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+  del(k) { try { localStorage.removeItem(k); } catch (e) {} },
+};
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const nf = (x, d = 2) => x == null || isNaN(x) ? "n/a" : Number(x).toLocaleString("hu-HU", { minimumFractionDigits: d, maximumFractionDigits: d });
+const pct = (x, d = 1, mul = 1) => x == null || isNaN(x) ? "n/a" : (x * mul > 0 ? "+" : "") + nf(x * mul, d) + "%";
+const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const SERIES = ["--s1", "--s2", "--s3", "--s4", "--s5", "--s6"];
+let blob = null, DATA = null, charts = [];
+
+async function loadBlob() {
+  const r = await fetch("data.enc.json", { cache: "no-store" });
+  if (!r.ok) throw new Error("Az adatfájl nem érhető el.");
+  return r.json();
+}
+
+async function tryRemembered() {
+  const raw = store.get(KEY_STORE);
+  if (!raw) return false;
+  try { DATA = await decryptBlob(blob, await importRawKey(raw)); return true; }
+  catch (e) { store.del(KEY_STORE); return false; }
+}
+
+$("loginForm").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  $("err").textContent = ""; $("openBtn").disabled = true; $("openBtn").textContent = "Megnyitás…";
+  try {
+    const remember = $("remember").checked;
+    const { data, key } = await decryptWithPassword(blob, $("pw").value, remember);
+    DATA = data;
+    if (remember) store.set(KEY_STORE, toB64(await crypto.subtle.exportKey("raw", key)));
+    $("pw").value = "";
+    try { show(); } catch (re) { console.error(re); $("err").textContent = "Megjelenítési hiba: " + re.message; return; }
+  } catch (e) {
+    $("err").textContent = "Hibás jelszó, vagy az adatfájl nem olvasható. Próbáld újra.";
+  } finally { $("openBtn").disabled = false; $("openBtn").textContent = "Megnyitás"; }
+});
+$("logoutBtn").addEventListener("click", () => {
+  store.del(KEY_STORE); DATA = null; charts.forEach((c) => c.destroy()); charts = [];
+  $("app").classList.add("hidden"); $("login").classList.remove("hidden");
+});
+$("themeBtn").addEventListener("click", () => {
+  const cur = document.documentElement.getAttribute("data-theme") ||
+    (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  const next = cur === "dark" ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", next); store.set("dash_theme", next);
+  if (DATA) render();
+});
+(function initTheme() { const t = store.get("dash_theme"); if (t) document.documentElement.setAttribute("data-theme", t); })();
+
+function show() { $("login").classList.add("hidden"); $("app").classList.remove("hidden"); render(); }
+
+function baseChartOpts(extra = {}) {
+  Chart.defaults.color = css("--ink-2");
+  Chart.defaults.font.family = 'system-ui, -apple-system, "Segoe UI", sans-serif';
+  return Object.assign({
+    responsive: true, maintainAspectRatio: false, animation: false,
+    interaction: { mode: "index", intersect: false },
+    plugins: { legend: { position: "bottom", labels: { boxWidth: 14, boxHeight: 2 } },
+               tooltip: { backgroundColor: css("--surface"), titleColor: css("--ink"), bodyColor: css("--ink-2"),
+                          borderColor: css("--ring"), borderWidth: 1 } },
+    scales: { x: { grid: { display: false }, border: { color: css("--axis") }, ticks: { color: css("--muted"), maxTicksLimit: 6 } },
+              y: { grid: { color: css("--grid") }, border: { display: false }, ticks: { color: css("--muted") } } },
+  }, extra);
+}
+
+function tile(label, val, sub, cls = "") {
+  return `<div class="card tile"><div class="lbl">${esc(label)}</div><div class="val ${cls}">${val}</div><div class="sub">${sub || ""}</div></div>`;
+}
+const signCls = (x) => x == null ? "" : x > 0 ? "up" : x < 0 ? "down" : "";
+const money = (x, cur) => x == null ? "n/a" : (x > 0 ? "+" : "") + nf(x) + " " + cur;
+
+function render() {
+  charts.forEach((c) => c.destroy()); charts = []; sectorChart = null;
+  const D = DATA, cur = D.base_currency, P = D.portfolio || { items: [], totals: {}, exposure: {}, limits: [], signals: [] };
+  const T = P.totals || {};
+  $("updated").textContent = `Frissítve: ${new Date(D.generated).toLocaleString("hu-HU")}` + (D.portfolio_date ? ` · portfólió-adat: ${D.portfolio_date}` : "");
+
+  // a) Áttekintés
+  const plPct = T.cost_base ? T.pl_base / T.cost_base * 100 : null;
+  $("tiles").innerHTML =
+    tile("Összérték", T.value_base != null ? nf(T.value_base) + " " + cur : "n/a", `befektetve: ${T.cost_base != null ? nf(T.cost_base) + " " + cur : "n/a"}`) +
+    tile("Napi eredmény", money(D.pl_change.napi, cur), "az előző pillanatképhez képest", signCls(D.pl_change.napi)) +
+    tile("Heti eredmény", money(D.pl_change.heti, cur), "7 nappal korábbihoz képest", signCls(D.pl_change.heti)) +
+    tile("Vétel óta", money(T.pl_base, cur), plPct == null ? "" : pct(plPct, 1), signCls(T.pl_base));
+  const S = D.series || [];
+  const labels = S.map((p) => p.date);
+  if (S.length >= 2) {
+    charts.push(new Chart($("valueChart"), { type: "line", data: { labels, datasets: [
+      { label: "Portfólió értéke", data: S.map((p) => p.value), borderColor: css("--s1"), backgroundColor: css("--s1"), borderWidth: 2, pointRadius: 0, tension: 0.2 },
+      { label: "Befektetett összeg", data: S.map((p) => p.cost), borderColor: css("--s2"), backgroundColor: css("--s2"), borderWidth: 2, pointRadius: 0, stepped: true },
+    ] }, options: baseChartOpts() }));
+    const i0 = S.findIndex((p) => p.value && p.cost && p.bench);
+    if (i0 >= 0) {
+      const r0 = S[i0].value / S[i0].cost, b0 = S[i0].bench;
+      charts.push(new Chart($("indexChart"), { type: "line", data: { labels: labels.slice(i0), datasets: [
+        { label: "Portfólió (érték / befektetett)", data: S.slice(i0).map((p) => p.value && p.cost ? (p.value / p.cost) / r0 * 100 : null), borderColor: css("--s1"), backgroundColor: css("--s1"), borderWidth: 2, pointRadius: 0, tension: 0.2 },
+        { label: "S&P 500", data: S.slice(i0).map((p) => p.bench ? p.bench / b0 * 100 : null), borderColor: css("--s2"), backgroundColor: css("--s2"), borderWidth: 2, pointRadius: 0, tension: 0.2 },
+      ] }, options: baseChartOpts() }));
+    }
+    $("valueEmpty").classList.add("hidden"); $("indexEmpty").classList.toggle("hidden", i0 >= 0);
+  } else { $("valueEmpty").classList.remove("hidden"); $("indexEmpty").classList.remove("hidden"); }
+
+  // Havi terv és teljesítmény
+  const PL = D.plan, PF = D.perf;
+  $("planBox").innerHTML = PL && !PL.error ? `<div class="muted">${esc(PL.date)} · ${nf(PL.monthly, 0)} ${esc(PL.currency)} · cél mag/szatellit ${nf(PL.core_ratio * 100, 0)}/${nf(100 - PL.core_ratio * 100, 0)}</div><ul class="sig">`
+    + PL.core_buys.filter((b) => b.amount >= 0.5).map((b) => `<li>Mag – ${esc(b.ticker)}: <b>${nf(b.amount, 0)} ${esc(PL.currency)}</b></li>`).join("")
+    + PL.satellite_buys.map((b) => `<li>Szatellit – ${esc(b.ticker)} (${esc(b.tier)}): <b>${nf(b.amount, 0)} ${esc(PL.currency)}</b> – ✅ ${esc(b.phase)}</li>`).join("")
+    + (PL.core_skipped || []).map((k) => `<li>Mag – ${esc(k.ticker)} most kimarad (${esc((k.why || []).join("; "))}) – az összege az S&amp;P 500 mag-ETF-ekbe ment</li>`).join("")
+    + (PL.excluded || []).filter((x) => x.promising).map((x) => `<li>🌍 Ígéretes, S&amp;P 500-on kívül – <b>${esc(x.ticker)}</b> ${esc(x.name || "")}: ${x.score} pont, várható hozam ${nf(x.er * 100, 1)}%/év${x.phase ? " – ✅ " + esc(x.phase) : ""} (nem automatikus; érdemes átgondolni)</li>`).join("")
+    + (PL.reserve ? `<li>Szatellit-tartalék: <b>${nf(PL.reserve, 0)} ${esc(PL.currency)}</b> (nincs nagyon jó belépő)</li>` : "")
+    + (PL.diversifier && PL.diversifier.buy ? `<li>🌐 Diverzifikáló – ${esc(PL.diversifier.buy.ticker)}: <b>${nf(PL.diversifier.buy.amount, 0)} ${esc(PL.currency)}</b></li>`
+       : PL.diversifier && PL.diversifier.reserve ? `<li>🌐 Diverzifikáló tartalék: <b>${nf(PL.diversifier.reserve, 0)} ${esc(PL.currency)}</b> (összesen ${nf(PL.diversifier.accum, 0)})</li>` : "") + "</ul>"
+    : planPreview(D.plan_info);
+  $("perfBox").innerHTML = PF ? ["mag", "szatellit"].map((k) => PF[k]
+      ? `<div>${k === "mag" ? "Mag" : "Szatellit"}: <b class="${signCls(PF[k].return)}">${pct(PF[k].return, 1, 100)}</b> vs S&amp;P 500 ${pct(PF[k].bench_return, 1, 100)} → <b class="${signCls(PF[k].excess)}">${PF[k].excess >= 0 ? "előny" : "lemaradás"} ${nf(Math.abs(PF[k].excess) * 100, 1)} pp</b></div>`
+      : `<div>${k === "mag" ? "Mag" : "Szatellit"}: nincs mérhető tétel</div>`).join("")
+    + (PF.skipped && PF.skipped.length ? `<div class="muted" style="margin-top:6px">Vételi dátum nélkül nem mérhető: ${PF.skipped.map(esc).join(", ")}</div>` : "")
+    : "Még nincs adat.";
+
+  // b) Kitettség
+  const E = P.exposure || {}, L = D.limits;
+  const groups = [["Cég (ETF-átfedéssel)", E.company_pct, L.company], ["Szektor", E.sector_pct, L.sector],
+                  ["Ország", E.country_pct, L.country], ["Deviza", E.currency_groups, null]];
+  $("exposure").innerHTML = groups.map(([t], i) => `<div class="card"><h3>${esc(t)}</h3><div class="donut-box"><canvas id="donut${i}"></canvas></div><ul class="legend-list" id="dl${i}"></ul></div>`).join("");
+  groups.forEach(([title, obj, limit], i) => {
+    const entries = Object.entries(obj || {}).filter(([, v]) => v > 0.0005).sort((a, b) => b[1] - a[1]);
+    const top = entries.slice(0, 5), rest = entries.slice(5).reduce((s, [, v]) => s + v, 0);
+    if (rest > 0.0005) top.push(["egyéb", rest]);
+    const colors = top.map((_, k) => css(SERIES[k]));
+    if (top.length) charts.push(new Chart($("donut" + i), { type: "doughnut",
+      data: { labels: top.map(([k]) => k), datasets: [{ data: top.map(([, v]) => +(v * 100).toFixed(1)), backgroundColor: colors, borderColor: css("--surface"), borderWidth: 2 }] },
+      options: { responsive: true, maintainAspectRatio: false, animation: false, cutout: "62%", plugins: { legend: { display: false },
+        tooltip: { callbacks: { label: (c) => ` ${c.label}: ${nf(c.raw, 1)}%` } } } } }));
+    $("dl" + i).innerHTML = top.map(([k, v], j) => {
+      const over = limit != null && v > limit && !String(k).startsWith("egyéb");
+      return `<li><span class="sw" style="background:${colors[j]}"></span><span>${esc(k)}</span>` +
+        `<span class="pct ${over ? "over" : ""}">${nf(v * 100, 1)}%${over ? ` ⚠ limit felett (${nf(limit * 100, 0)}%)` : ""}</span></li>`;
+    }).join("") + (limit != null ? `<li class="muted">Limit: ${nf(limit * 100, 0)}%</li>` : "") || `<li class="muted">Nincs adat.</li>`;
+  });
+  $("expNote").textContent = E.weights_approximate ? `Az ETF-átfedés közelítő S&P 500 súlyokkal készült (${E.weights_date}).` : (E.weights_date ? `ETF-súlyok: ${E.weights_date}` : "");
+
+  // c) Saját papírok
+  const TL = (DATA.links || {}).trade;
+  $("tradeBar").innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between">
+    <div class="ink2" style="font-size:14px">Árfolyamok frissítve: <b>${esc(String(DATA.portfolio_time || "–").replace("T", " ").slice(0, 16))}</b>
+      (hétköznap kétóránként automatikusan). Vétel/eladás után rögzítsd az ügyletet – a portfólió és a dashboard pár percen belül frissül.</div>
+    ${TL ? `<a href="${esc(TL)}" target="_blank" rel="noopener" style="display:inline-block;padding:10px 16px;border-radius:10px;background:var(--good);color:#fff;font-weight:600;text-decoration:none">💳 Vétel / eladás rögzítése</a>` : ""}</div>`;
+  $("holdings").innerHTML = (P.items || []).map(holdingCard).join("") || `<div class="muted">Nincs portfólióadat.</div>`;
+
+  // e) Átgondolandó
+  const sig = P.signals || [];
+  $("signals").innerHTML = sig.length ? sig.map((s) => {
+    const strong = s.level !== "figyelendő", tx = s.tax; let taxTxt = "";
+    if (strong && tx) taxTxt = tx.realized_gain_base > 0
+      ? `Becsült adóhatás teljes eladásnál: realizált nyereség ${nf(tx.realized_gain_base)} ${tx.base} × 15% szja = <b>${nf(tx.szja_base)} ${tx.base}</b>; szocho is terhelheti.`
+      : `Nincs realizált nyereség (${nf(tx.realized_gain_base)} ${tx.base}), szja nem keletkezik.`;
+    return `<div class="card" style="margin-bottom:10px${strong ? ";border-color:var(--critical)" : ""}"><h3>${s.kind === "értékromlás" ? "📉" : strong ? "⚖️" : "👀"} ${esc(s.ticker)} ${s.name ? "– " + esc(s.name) : ""} <span class="badge ${strong ? "crit" : ""}">${s.kind === "értékromlás" ? "értékromlás: a cég már nem termel jól nyereséget – az eladást érdemes átgondolni" : strong ? "erős eladási jelzés – érdemes átgondolni" : "figyelendő – nem eladási jelzés"}</span></h3>
+      <ul class="sig">${s.reasons.map((r) => `<li>${esc(r)}</li>`).join("")}</ul><div class="ink2" style="font-size:13px">${taxTxt}</div></div>`;
+  }).join("") : `<div class="card muted">Egyik saját papírnál sincs jelzés – tartás.</div>`;
+  const SW = (P.switches || {}).signals || [];
+  $("signals").innerHTML += SW.map((w) => `<div class="card" style="margin-bottom:10px;border-color:var(--serious)"><h3>🔁 ${esc(w.ticker)} → ${esc(w.to)} <span class="badge warn">csere érdemes lehet</span></h3>
+    <ul class="sig"><li>várható hozam a mai árról: ${w.floor ? "≤ " : ""}${nf(w.expected_return * 100, 1)}%/év vs S&amp;P 500 ${nf(w.sp500_er * 100, 1)}%/év – tartósan (${w.persist_days} napja) elmarad</li>
+    <li>${esc(w.to)} ${esc(w.to_name || "")}: ${nf(w.to_er * 100, 1)}%/év, belépésre alkalmas</li><li>adó után is megéri: legalább ${nf(w.need * 100, 1)} pp évi többlet szükséges; becsült szja ${nf(w.tax_base)} ${esc(w.base)}</li></ul></div>`).join("");
+
+  // d) Szűrő-jelöltek
+  const C = (D.screener && D.screener.candidates) || [];
+  $("screenerInfo").textContent = D.screener && D.screener.date ? `Legutóbbi szűrő: ${D.screener.date}` + (D.screener.phase_date ? `; a belépési fázis ${D.screener.phase_date}-i friss árfolyamokkal frissítve` : "") + `. Ezek szűrési jelöltek, nem vételi javaslatok. A DCF erősen függ a feltételezésektől; olcsó papír lehet értékcsapda.` : "Még nincs szűrő-futás.";
+  const tops = C.filter((c) => c.tier === "⭐" || c.tier === "🔶");
+  $("topCards").innerHTML = tops.map(candCard).join("") || (C.length ? `<div class="card muted">Ezen a héten egy papír sem felelt meg minden feltételnek.</div>` : "");
+  renderTable(C);
+
+  // Nyersanyagok és kötvények
+  const CM = DATA.commodities;
+  const pc = (x, d = 0) => x == null ? "n/a" : (x > 0 ? "+" : "") + nf(x * 100, d) + "%";
+  $("commTable").querySelector("tbody").innerHTML = CM && CM.items && CM.items.length
+    ? CM.items.slice().sort((a, b) => a.pct - b.pct).map((x) => `<tr><td>${x.signal ? "✅" : x.level === "drága" ? "🔴" : x.level === "átlagos" ? "–" : "🟡"} ${esc(x.level)}</td>
+      <td><b>${esc(x.name)}</b><br><span class="muted">${esc(x.under)}</span></td><td class="num">${nf(x.pct * 100, 0)}%</td><td class="num">${pc(x.vs_mean)}</td>
+      <td class="num">${pc(x.from_52w_high)}</td><td>${esc((x.phase && x.phase.label) || "n/a")}</td>
+      <td>${esc((x.buy && x.buy.length ? x.buy.join(", ") : x.buy_hint) || "")}${x.note ? `<br><span class="muted">⚠️ ${esc(x.note)}</span>` : ""}</td></tr>`).join("")
+    : `<tr><td colspan="7" class="muted">Még nincs adat (a következő napi futás után jelenik meg).</td></tr>`;
+  const GS = CM && CM.gold_silver, BD = CM && CM.bond;
+  $("commExtra").innerHTML = [GS ? `Arany/ezüst arány: <b>${nf(GS.value, 0)}</b> (20 éves átlag ${nf(GS.mean, 0)}, sáv ${nf(GS.pct * 100, 0)}%)${GS.silver_cheap ? " → az ezüst az aranyhoz képest történelmileg olcsó" : ""}` : "",
+    BD ? `USA 10 éves reálhozam (TIPS): <b>${nf(BD.real_yield, 2)}%</b> (${esc(BD.date)}${BD.pct == null ? "" : "; 20 éves sáv " + nf(BD.pct * 100, 0) + "%"}) → ${BD.attractive ? "✅ a kötvények reálhozama vonzó" : "nem kiemelkedő (vonzó ≥ " + nf(BD.min, 1) + "%)"}` : ""]
+    .filter(Boolean).join("<br>") || "";
+
+  // f) Track record
+  const TR = D.track_record || {}, hz = Object.keys(TR);
+  const tiers = [["⭐", "--s1"], ["🔶", "--s2"], ["egyéb", "--s3"]];
+  const hasTr = hz.some((h) => tiers.some(([t]) => TR[h][t] && TR[h][t].avg_return != null));
+  if (hasTr) {
+    const ds = tiers.map(([t, c]) => ({ label: t === "egyéb" ? "egyéb jelöltek" : t + " jelöltek", data: hz.map((h) => TR[h][t] && TR[h][t].avg_return != null ? +(TR[h][t].avg_return * 100).toFixed(1) : null),
+      backgroundColor: css(c), borderRadius: 4, borderSkipped: "start" }));
+    ds.push({ label: "S&P 500", data: hz.map((h) => { const r = tiers.map(([t]) => TR[h][t]).find((x) => x && x.avg_benchmark != null); return r ? +(r.avg_benchmark * 100).toFixed(1) : null; }),
+      backgroundColor: css("--s4"), borderRadius: 4, borderSkipped: "start" });
+    charts.push(new Chart($("trChart"), { type: "bar", data: { labels: hz.map((h) => h + " hónap"), datasets: ds },
+      options: baseChartOpts({ interaction: { mode: "nearest", intersect: true }, plugins: { legend: { position: "bottom" },
+        tooltip: { callbacks: { label: (c) => ` ${c.dataset.label}: ${c.raw == null ? "nincs elég adat" : (c.raw > 0 ? "+" : "") + nf(c.raw, 1) + "%"}` } } } }) }));
+    $("trNote").textContent = "Átlagos hozam a jelölés napjától; minta: " + hz.map((h) => `${h} hó: ` + tiers.map(([t]) => `${t} n=${(TR[h][t] || {}).n || 0}`).join(", ")).join(" · ");
+  } else { $("trChart").parentElement.classList.add("hidden"); $("trNote").textContent = "Még nincs elég adat – a track record a vasárnapi szűrők mentett jelöltjeiből épül fel."; }
+
+  // g) Piac
+  const M = D.market || {};
+  $("marketDate").textContent = D.market_date ? "· " + D.market_date : "";
+  $("marketTable").querySelector("tbody").innerHTML = Object.entries(M).filter(([, v]) => v).map(([k, v]) =>
+    `<tr><td>${esc(k)}</td><td class="num">${nf(v.last)}</td><td class="num ${signCls(v.chg_1d)}">${pct(v.chg_1d, 2)}</td><td class="num ${signCls(v.chg_5d)}">${pct(v.chg_5d, 2)}</td></tr>`).join("")
+    || `<tr><td colspan="4" class="muted">Nincs adat.</td></tr>`;
+  renderSectors();
+  const W = D.weekly || {};
+  const wk = Object.entries({ ...(W.market_week || {}), ...(W.sectors_week || {}) }).filter(([, v]) => v && v.chg_1w != null)
+    .sort((a, b) => b[1].chg_1w - a[1].chg_1w);
+  $("weekDate").textContent = W.date ? "· " + W.date : "";
+  $("weekEmpty").classList.toggle("hidden", wk.length > 0);
+  $("weekChart").parentElement.classList.toggle("hidden", !wk.length);
+  if (wk.length) charts.push(hbar($("weekChart"), wk.map(([k]) => k), wk.map(([, v]) => v.chg_1w), "heti változás"));
+  const AL = D.alerts || [];
+  $("alertsBox").innerHTML = AL.length ? `<ul class="sig">${AL.map((a) => `<li>${esc(a)}</li>`).join("")}</ul>` : "Tegnap nem volt nagy (küszöb feletti) mozgás a saját papírokban.";
+
+  // Belépési figyelés (napi, friss árfolyamokkal)
+  renderEntrywatch();
+  // Egyedi értékelések
+  const EV = D.evaluations || [];
+  $("evalCards").innerHTML = EV.map(evalCard).join("") || `<div class="card muted">Még nincs egyedi értékelés. Az „Egyedi értékelés” workflow-val indítható, az eredmény itt is megjelenik.</div>`;
+  // Események
+  renderEvents(P);
+  renderEtfs();
+  renderChina(P);
+
+  // MI
+  const AD = D.ai_daily || {};
+  $("aiMeta").textContent = AD.date ? `${AD.date} · ${AD.model || "MI nélkül (tartalék szöveg)"}` : "";
+  $("aiText").textContent = AD.text || "Nincs napi MI-összefoglaló.";
+  $("aiWeekMeta").textContent = W.date ? W.date : "";
+  $("aiWeekText").textContent = W.ai_text || "A szombati összefoglaló után jelenik meg.";
+
+  // Teljes üzenetek (minden, ami a Telegramon ment)
+  const MS = D.messages || {};
+  $("msgBox").innerHTML = Object.entries(MS).filter(([, m]) => m && m.text).map(([k, m]) =>
+    `<details class="msg"><summary>${esc(k.charAt(0).toUpperCase() + k.slice(1))} <span class="muted">· ${esc((m.date || "").slice(0, 16).replace("T", " "))}</span></summary><pre>${esc(m.text)}</pre></details>`).join("")
+    || `<div class="card muted">Még nincs mentett üzenet.</div>`;
+
+  // Kiemelt (a lap tetején)
+  renderHighlights(P);
+
+  // h) Lábléc
+  $("foot").innerHTML = `Frissítve: ${esc(new Date(D.generated).toLocaleString("hu-HU"))}<br>Adatforrások: ${esc((D.sources || []).join(", "))}<br><b>Tájékoztató jellegű, nem befektetési tanács.</b>`;
+}
+
+function hbar(canvas, labels, values, name, raw) {
+  canvas.parentElement.style.height = Math.max(160, labels.length * 26 + 40) + "px";
+  return new Chart(canvas, { type: "bar", data: { labels, datasets: [{ label: name, data: values,
+      backgroundColor: values.map((v) => css(raw || v >= 0 ? "--s1" : "--s2")), borderRadius: 3, borderSkipped: "start" }] },
+    options: baseChartOpts({ indexAxis: "y", interaction: { mode: "nearest", axis: "y", intersect: false },
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => ` ${name}: ${raw ? c.raw : pct(c.raw, 2)}` } } },
+      scales: { x: { grid: { color: css("--grid") }, border: { display: false }, ...(raw ? { min: 0, max: 100 } : {}), ticks: { color: css("--muted"), callback: (v) => raw ? v : v + "%" } },
+                y: { grid: { display: false }, border: { color: css("--axis") }, ticks: { color: css("--ink-2"), autoSkip: false,
+                  callback(v) { const l = String(this.getLabelForValue(v)); const n = raw ? 28 : 18; return l.length > n ? l.slice(0, n - 1) + "…" : l; } } } } }) });
+}
+
+let sectorKey = "chg_5d", sectorChart = null;
+function renderSectors() {
+  const SE = DATA.sectors || {};
+  const keys = [["chg_1d", "1 nap"], ["chg_5d", "5 nap"], ["chg_1m", "1 hónap"]];
+  $("sectorChips").innerHTML = keys.map(([k, l]) => `<button type="button" class="chip" aria-pressed="${k === sectorKey}" data-k="${k}">${l}</button>`).join("");
+  $("sectorChips").querySelectorAll("button").forEach((b) => b.onclick = () => { sectorKey = b.dataset.k; renderSectors(); });
+  const rows = Object.entries(SE).filter(([, v]) => v && v[sectorKey] != null).sort((a, b) => b[1][sectorKey] - a[1][sectorKey]);
+  if (sectorChart) { sectorChart.destroy(); charts = charts.filter((c) => c !== sectorChart); sectorChart = null; }
+  $("sectorEmpty").classList.toggle("hidden", rows.length > 0);
+  $("sectorChart").parentElement.classList.toggle("hidden", !rows.length);
+  if (rows.length) { sectorChart = hbar($("sectorChart"), rows.map(([k]) => k), rows.map(([, v]) => v[sectorKey]), keys.find(([k]) => k === sectorKey)[1]); charts.push(sectorChart); }
+}
+
+function entryItems() {
+  const ew = DATA.entrywatch;
+  if (ew && ew.items) return { date: DATA.screener && DATA.screener.phase_date, from: ew.date, items: ew.items, fresh: true };
+  const C = (DATA.screener && DATA.screener.candidates) || [];
+  return { date: DATA.screener && DATA.screener.date, from: DATA.screener && DATA.screener.date, fresh: false,
+    items: C.filter((c) => c.watch).map((c) => ({ ticker: c.ticker, name: c.name, tier: c.tier, phase: c.phase, score: c.score,
+      entry_ok: c.entry_ok, highlight: c.entry_ok && (c.score || 0) >= 85, price: c.price, buy_below: c.buy_below,
+      pess: c.values && c.values.pesszimista, currency: c.currency })) };
+}
+
+function renderEntrywatch() {
+  const E = entryItems();
+  $("ewMeta").textContent = E.items.length ? (E.fresh ? `A ${E.from}-i szűrő figyelőlistája, ${E.date || "ma"} friss árfolyamokkal újraellenőrizve.` : `A ${E.from}-i szűrő szerinti fázis (napi frissítés még nem futott).`) : "";
+  if (!E.items.length) { $("ewBox").innerHTML = `<div class="muted">A figyelőlista üres – a vasárnapi szűrő tölti fel (⭐/🔶 és a csak a technikai kép miatt kimaradt papírok).</div>`; return; }
+  const rows = [...E.items].sort((a, b) => (b.entry_ok - a.entry_ok) || ((b.highlight ? 1 : 0) - (a.highlight ? 1 : 0)) || ((b.score || 0) - (a.score || 0)));
+  $("ewBox").innerHTML = `<div class="table-wrap"><table><thead><tr><th>Állapot</th><th>Ticker</th><th>Név</th><th>Szint</th><th class="num">Pont</th><th>Fázis</th><th class="num">Ár</th><th class="num">Pesszimista érték</th></tr></thead><tbody>` +
+    rows.map((x) => `<tr><td>${x.entry_ok ? `<b class="up">${x.new ? "🆕 " : ""}${x.highlight ? "🌟 " : ""}✅ alkalmas</b>` : "🟡 figyelt"}</td><td><b>${esc(x.ticker)}</b></td><td>${esc(x.name || "")}</td>
+      <td>${esc(x.tier === "⭐" || x.tier === "🔶" ? x.tier : "💎")}</td><td class="num">${x.score ?? "n/a"}</td>
+      <td>${esc((x.phase && x.phase.label) || "n/a")}${x.phase && x.phase.stage ? ` <span class="muted">(${esc(x.phase.stage)})</span>` : ""}</td>
+      <td class="num">${nf(x.price)} ${esc(x.currency || "")}</td><td class="num">${x.pess ? nf(x.pess) : "n/a"}</td></tr>`).join("") +
+    `</tbody></table></div><div class="muted" style="margin-top:6px;font-size:13px">A belépési fázis a beállított technikai szabályok szerinti jelzés, nem vételi javaslat; érdemes átgondolni.</div>`;
+}
+
+function renderEtfs() {
+  const E = DATA.etfs, items = (E && E.items) || [];
+  $("etfInfo").textContent = E ? `${E.date}. 🌐 Diverzifikáció: ✅ = az S&P 500-tól eltérő (együttmozgás ≤ 0,5, S&P-esésekben az esés ≤ 50%-át követi), várható hozama közel az S&P-é és kedvező a fázis; 🟡 = szerkezetileg jó, fázisra vár. ${E.sp500_er != null ? `Az S&P 500 várható hozama ${nf(E.sp500_er * 100, 1)}%/év – ✅/🔶 csak ennél magasabb várható hozammal (▲). Együttmozgás: 1 = együtt mozog az S&P 500-zal, 0 körül = független, negatív = ellentétes. ` : ""}Beruházási esély (0–100): a tagok saját értékelése (DCF-diszkont, minőség) + technikai kép. Az S&P 500 alapúaknál az összes tag, a régiós és kínai ETF-eknél a legnagyobb ~10 tag alapján (közelítő). ✅ olcsó + kedvező fázis, 🔶 ugyanez szektorlimit felett, 🟡 olcsó, még nincs belépési fázis. Nem vételi javaslat.`
+    + (E.missing && E.missing.length ? ` Nem elérhető ticker: ${E.missing.join(", ")}.` : "") : "Az ETF-szűrő a vasárnapi szűrővel fut (vagy kézzel: ETF-szűrő workflow).";
+  const sc = items.filter((x) => x.score != null).sort((a, b) => b.score - a.score);
+  $("etfEmpty").classList.toggle("hidden", sc.length > 0);
+  $("etfChart").parentElement.classList.toggle("hidden", !sc.length);
+  if (sc.length) charts.push(hbar($("etfChart"), sc.map((x) => x.ticker + (x.sector_hu ? " · " + x.sector_hu : "")), sc.map((x) => x.score), "beruházási esély", true));
+  const p0 = (x) => x == null ? "n/a" : nf(x * 100, 0) + "%";
+  const order = { "✅": 0, "🔶": 1, "🟡": 2, "–": 3 };
+  $("etfTable").querySelector("tbody").innerHTML = [...items].sort((a, b) => (order[a.status] - order[b.status]) || ((b.score ?? -1) - (a.score ?? -1))).map((x) => { const L = x.look_through, B = x.vs_bench || {}, T = x.technical || {}, lim = x.limit;
+    return `<tr><td>${esc(x.status)}</td><td><b>${esc(x.ticker)}</b><br><span class="muted">${esc(x.name || x.yf_name || "")}</span></td><td>${esc(x.sector_hu || (x.kind === "sp500_equal" ? "S&P 500 egyenlő súly" : "–"))}</td>
+      <td class="num">${x.score ?? "n/a"}</td>
+      <td class="num ${x.beats_sp500 ? "up" : ""}">${x.expected_return != null ? nf(x.expected_return * 100, 1) + "%" + (x.beats_sp500 ? " ▲" : "") : "n/a"}</td>
+      <td class="num">${x.corr_sp500 != null ? nf(x.corr_sp500, 2) : "n/a"}</td>
+      <td style="white-space:normal;min-width:170px">${x.diversifier && x.diversifier.score != null ? `${x.diversifier.entry ? "✅" : x.diversifier.structural ? "🟡" : "–"} ${x.diversifier.score} pont${x.div && x.div.down_capture != null ? `<br><span class="muted">S&amp;P-esésben ${nf(x.div.down_capture * 100, 0)}%${x.div.etf_in_drawdown != null ? `, nagy zuhanáskor ${pct(x.div.etf_in_drawdown, 0, 100)}` : ""}</span>` : ""}` : "n/a"}</td>
+      <td class="num ${L && L.discount != null ? signCls(L.discount) : ""}">${L && L.discount != null ? nf(L.discount, 0) + "%" : "n/a"}</td>
+      <td class="num">${L ? p0(L.coverage) + (L.holdings_based ? `<br><span class="muted">top ${L.n}</span>` : "") : "–"}</td><td class="num">${L && L.pe ? nf(L.pe, 1) + (B.pe ? " (" + nf(B.pe, 1) + ")" : "") : "n/a"}</td>
+      <td class="num">${L && L.fcf_yield != null ? nf(L.fcf_yield * 100, 1) + "%" : "n/a"}</td>
+      <td>${esc((x.phase && x.phase.label) || "n/a")}</td><td class="num">${x.cagr && x.cagr["5y"] != null ? pct(x.cagr["5y"], 1, 100) : "n/a"}</td><td class="num ${x.vs_sp500 ? signCls(x.vs_sp500["5y"]) : ""}">${x.vs_sp500 && x.vs_sp500["5y"] != null ? (x.vs_sp500["5y"] > 0 ? "+" : "") + nf(x.vs_sp500["5y"] * 100, 1) + " pp" : "n/a"}</td>
+      <td class="num">${x.ter == null ? "n/a" : nf(x.ter, 2) + "%"}</td>
+      <td class="num">${x.div_yield == null ? "n/a" : x.div_yield ? nf(x.div_yield * 100, 2) + "%" : "– (Acc)"}</td>
+      <td style="white-space:normal;min-width:220px">${x.group_limit ? `Kína ${nf(x.group_limit.before * 100, 0)}% → <span class="${x.group_limit.over ? "over" : ""}">${nf(x.group_limit.after * 100, 0)}%</span>; ` : ""}${lim ? `szektor ${nf(lim.before * 100, 0)}% → <span class="${lim.over ? "over" : ""}">${nf(lim.after * 100, 0)}%</span>; ` : ""}${esc(x.overlap || "")}${x.warning ? `<br><span class="over">${esc(x.warning)}</span>` : ""}</td></tr>`; }).join("")
+    || `<tr><td colspan="16" class="muted">Még nincs ETF-adat.</td></tr>`;
+}
+
+function chinaShare(P) {
+  const g = (P.exposure || {}).country_group_pct || {}, lim = (DATA.country_groups || {})["Kína"];
+  return { pct: g["Kína"] ?? null, limit: lim ? lim.limit : null };
+}
+
+function renderChina(P) {
+  const R = DATA.china || [], cs = chinaShare(P);
+  $("chinaInfo").textContent = `Kína-kitettség most: ${cs.pct == null ? "n/a" : nf(cs.pct * 100, 1) + "%"}${cs.limit != null ? ` (limit ${nf(cs.limit * 100, 0)}%)` : ""}. `
+    + "Elsősorban Kína-ETF-eken át (lásd ETF-szűrő), a nagy cégek itt egyedileg is, ugyanazokkal a feltételekkel. A VIE-szerkezet, az állami szabályozás és a geopolitika kockázata a számokban nem jelenik meg. Nem vételi javaslat.";
+  $("chinaTable").querySelector("tbody").innerHTML = R.map((x) => { const ok = x.status === "ok", ph = x.phase || {};
+    return `<tr><td>${!ok ? "–" : x.entry_ok ? `<b class="up">✅ alkalmas</b>` : (x.tier === "⭐" || x.tier === "🔶") ? x.tier + " figyelt" : (x.discount_pct >= 30 ? "💎" : "")}</td>
+      <td><b>${esc(x.ticker)}</b><br><span class="muted">${esc(x.name || "")}</span></td>
+      <td class="num">${ok ? nf(x.price) + " " + esc(x.currency || "") : "n/a"}</td><td class="num">${ok ? nf(x.values.bazis) : "n/a"}</td>
+      <td class="num ${ok ? signCls(x.discount_pct) : ""}">${ok ? nf(Math.max(x.discount_pct, -500), 0) + "%" : "n/a"}</td><td class="num">${x.score ?? "n/a"}</td>
+      <td>${esc(ok ? ph.label || "n/a" : "")}</td>
+      <td style="white-space:normal;min-width:240px">${ok ? esc((x.failed || []).slice(0, 3).join("; ")) + ((x.failed || []).length > 3 ? ` (+${x.failed.length - 3})` : "") : "nem értékelhető – " + esc(x.reason || "")}</td></tr>`; }).join("")
+    || `<tr><td colspan="8" class="muted">A vasárnapi szűrő után jelenik meg.</td></tr>`;
+}
+
+function upcomingEvents(P) {
+  const ev = [];
+  (P.items || []).forEach((it) => { const e = it.quality && it.quality.earnings_soon; if (e) ev.push({ date: e.date, text: `📅 ${it.ticker} eredményjelentés (${e.days} nap múlva)` }); });
+  const today = new Date().toISOString().slice(0, 10);
+  ((DATA.weekly && DATA.weekly.events) || []).forEach((e) => { if (String(e.date) >= today && !ev.some((x) => x.text.includes(e.text))) ev.push({ date: String(e.date), text: e.text }); });
+  return ev.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+}
+
+function renderEvents(P) {
+  const ev = upcomingEvents(P);
+  $("eventsBox").innerHTML = ev.length ? `<ul class="evlist sig">${ev.map((e) => `<li><b>${esc(e.date)}</b> – ${esc(e.text)}</li>`).join("")}</ul>`
+    : `<div class="muted">Nincs ismert közelgő esemény a saját papíroknál.</div>`;
+}
+
+function planPreview(pi) {
+  if (!pi) return "Nincs beállított havi terv.";
+  return `<div>Következő befizetés: <b>${esc(pi.next_date)}</b> (${pi.days_left === 0 ? "ma" : pi.days_left + " nap múlva"})</div>
+    <ul class="sig"><li>Mag (S&amp;P 500): ${nf(pi.core_ratio * 100, 0)}% ≈ <b>${nf(pi.core_amount, 0)} ${esc(pi.currency)}</b>${(pi.core_split || []).length > 1 ? " – " + pi.core_split.map((c) => `${esc(c.ticker)} ${nf(c.weight * 100, 0)}% ≈ ${nf(c.amount, 0)} ${esc(pi.currency)}`).join(", ") : ""}</li>
+    <li>Szatellit (egyedi papírok): ${nf(100 - pi.core_ratio * 100, 0)}% ≈ <b>${nf(pi.satellite_amount, 0)} ${esc(pi.currency)}</b> – a belépésre alkalmas jelöltek kapják, papíronként legfeljebb ${nf((pi.satellite_max_position || 0) * 100, 0)}%</li></ul>
+    <div class="muted">A pontos, eladás nélküli újrasúlyozott bontás a tervnapon készül el (a lemaradó rész kap többet).</div>`;
+}
+
+function hlCard(cls, title, big, body) {
+  return `<div class="card hl ${cls}"><h3>${title}</h3>${big != null ? `<div class="big">${big}</div>` : ""}${body}</div>`;
+}
+
+function renderHighlights(P) {
+  const out = [], E = entryItems(), ready = E.items.filter((x) => x.entry_ok);
+  const star = ready.filter((x) => x.highlight);
+  out.push(hlCard(ready.length ? "good" : "", "✅ Belépésre alkalmas jelöltek", ready.length,
+    ready.length ? `<ul>${ready.slice(0, 6).map((x) => `<li>${x.highlight ? "🌟 " : ""}${x.new ? "🆕 " : ""}<b>${esc(x.ticker)}</b> ${esc(x.name || "")} – ${esc(x.phase && x.phase.label)}${x.score != null ? `, ${x.score} pont` : ""}</li>`).join("")}</ul>`
+      + (star.length ? `<div style="margin-top:6px;font-size:13px">🌟 kiemelkedő: ${star.map((x) => esc(x.ticker)).join(", ")} – a meglévő papíroktól függetlenül érdemes átgondolni.</div>` : "")
+      : `<div class="ink2" style="font-size:14px">Most nincs belépésre alkalmas jelölt (${E.items.length} figyelt papír). <a href="#s-belepes">Figyelőlista</a></div>`));
+  const PL = DATA.plan, pi = DATA.plan_info;
+  if (pi) out.push(hlCard("", "📆 Havi befizetés", `${esc(pi.next_date.slice(5).replace("-", "."))}.`,
+    `<div class="ink2" style="font-size:14px">${nf(pi.monthly, 0)} ${esc(pi.currency)}: mag ${nf(pi.core_amount, 0)} (${(pi.core_split || []).map((c) => esc(c.ticker.split(".")[0]) + " " + nf(c.amount, 0)).join(" + ") || "S&amp;P 500"}) / szatellit ${nf(pi.satellite_amount, 0)}${pi.days_left === 0 ? " – <b>ma van a tervnap</b>" : ` – ${pi.days_left} nap múlva`}</div>`
+    + (PL && PL.date === new Date().toISOString().slice(0, 10) ? `<div style="font-size:13px;margin-top:4px"><a href="#s-terv">A mai terv részletei</a></div>` : "")));
+  const ER = ((DATA.etfs && DATA.etfs.items) || []).filter((x) => x.status === "✅" || x.status === "🔶");
+  const RM = DATA.reminders || [];
+  if (RM.length) out.push(hlCard("", "⏰ Közelgő emlékeztetők", null,
+    `<ul class="ink2" style="font-size:14px">${RM.slice(0, 5).map((r) => `<li><b>${esc(r.date.slice(5).replace("-", "."))}.</b> ${esc(r.text)}</li>`).join("")}</ul>`));
+  const LV = ((DATA.levels || {}).items) || [];
+  if (LV.length) out.push(hlCard(LV.some((x) => x.hit) ? "good" : "", "🎯 Figyelt beszállási szintek", LV.filter((x) => x.hit).length,
+    `<div class="ink2" style="font-size:14px">${LV.map((x) => `<b>${esc(x.ticker)}</b> ${nf(x.price)} ${esc(x.currency || "")}`
+      + (x.hit ? " → ✅ <b>jó beszálló</b>" : " → még nem")
+      + `<ul>${(x.conditions || []).map((c) => `<li>${c.ok ? "✅" : "❌"} ${esc(c.name)}: ${esc(c.text)}</li>`).join("")}${x.reference ? `<li>ℹ️ ${esc(x.reference)}</li>` : ""}</ul>`).join("")}</div>`));
+  if (DATA.etfs) out.push(hlCard(ER.length ? "good" : "", "🧺 Belépésre alkalmas ETF", ER.length,
+    ER.length ? `<ul>${ER.map((x) => `<li>${esc(x.status)} <b>${esc(x.ticker)}</b> ${esc(x.sector_hu || "")} – diszkont ${nf(x.look_through.discount, 0)}%, ${esc(x.phase.label)}</li>`).join("")}</ul>`
+      : `<div class="ink2" style="font-size:14px">Most nincs. <a href="#s-etf">ETF-lista</a></div>`));
+  const CR = (DATA.china || []).filter((x) => x.entry_ok), CE = ((DATA.etfs && DATA.etfs.items) || []).filter((x) => x.kind === "china" && (x.status === "✅" || x.status === "🔶")), cs = chinaShare(P);
+  out.push(hlCard(CR.length || CE.length ? "good" : "", "🇨🇳 Kína", cs.pct == null ? "n/a" : nf(cs.pct * 100, 1) + "%",
+    `<div class="ink2" style="font-size:14px">kitettség${cs.limit != null ? ` (limit ${nf(cs.limit * 100, 0)}%)` : ""}; belépésre alkalmas: `
+    + (CE.length || CR.length ? [...CE.map((x) => esc(x.ticker) + " (ETF)"), ...CR.map((x) => esc(x.ticker))].join(", ") : "most nincs") + ` – <a href="#s-kina">részletek</a></div>`));
+  const sig = (P.signals || []).filter((s) => s.level !== "figyelendő"), wsig = (P.signals || []).filter((s) => s.level === "figyelendő");
+  out.push(hlCard(sig.length ? "crit" : "", "⚖️ Eladási jelzés (szigorú)", sig.length,
+    (sig.length ? `<div class="ink2" style="font-size:14px">${sig.map((s) => esc(s.ticker)).join(", ")} – <a href="#s-atgondolando">részletek és adóhatás</a></div>` : `<div class="ink2" style="font-size:14px">Nincs eladási jelzés – tartás.</div>`)
+    + (wsig.length ? `<div class="muted" style="font-size:13px;margin-top:4px">👀 figyelendő (nem eladás): ${wsig.map((s) => esc(s.ticker)).join(", ")}</div>` : "")));
+  const lim = P.limits || [];
+  out.push(hlCard(lim.length ? "crit" : "", "🚧 Limit-túllépések", lim.length,
+    lim.length ? `<ul>${lim.map((w) => `<li>${esc(w.text)}</li>`).join("")}</ul>` : `<div class="ink2" style="font-size:14px">Minden kitettség a limiten belül.</div>`));
+  const ev = upcomingEvents(P);
+  out.push(hlCard("", "📅 Közelgő események", ev.length,
+    ev.length ? `<ul>${ev.slice(0, 5).map((e) => `<li>${esc(e.date)} – ${esc(e.text)}</li>`).join("")}</ul>` : `<div class="ink2" style="font-size:14px">Nincs ismert közelgő esemény.</div>`));
+  const BF = DATA.buffett;
+  if (BF) out.push(hlCard(BF.new_filing ? "good" : "", "🧓 Buffett-követés (13F)", (BF.buys || []).length,
+    `<div class="ink2" style="font-size:14px">${esc(BF.report_date)} negyedév: ${(BF.buys || []).slice(0, 6).map((x) => `<b>${esc(x.ticker || x.name)}</b> (${esc(x.kind)})`).join(", ") || "nincs jelentős új vagy növelt pozíció"}.
+    A követett papírok a figyelőlistán vannak; kedvező fázisban a havi terv is számol velük.</div>`));
+  const DP = DATA.dip;
+  if (DP && DP.drawdown != null) out.push(hlCard(DP.level ? "good" : "", "📉 S&P 500 a 52 hetes csúcstól", pct(DP.drawdown, 1, 100),
+    `<div class="ink2" style="font-size:14px">${DP.level ? `<b>Index-vételi lehetőség</b> (≥${nf(DP.level * 100, 0)}% esés): érdemes átgondolni a mag-befizetés növelését vagy a tartalék bevetését – eladás helyett.` : "Nincs jelentős esés – a havi befizetés a terv szerint."}${DP.vix ? ` VIX ${nf(DP.vix, 1)}.` : ""}</div>`));
+  const AL = DATA.alerts || [];
+  if (AL.length) out.push(hlCard("warn", "⚠️ Nagy napi mozgások", AL.length, `<ul>${AL.map((a) => `<li>${esc(a)}</li>`).join("")}</ul>`));
+  $("highlights").innerHTML = out.join("");
+}
+
+function evalCard(e) {
+  const s = e.score || {}, ok = e.status === "ok" && e.values;
+  const head = s.tier && s.tier !== "egyéb" ? s.tier + " " : "";
+  return `<div class="card ${s.tier === "⭐" ? "star" : s.tier === "🔶" ? "orange" : ""}"><h3>${head}${esc(e.ticker)}${e.name ? " – " + esc(e.name) : ""}</h3>
+    <div class="ink2" style="font-size:13px">${esc(e.sector || "")} · értékelve: ${esc(String(e.date).replace("T", " "))}</div>
+    <div style="margin-top:6px">${s.entry_ok ? `<span class="badge" style="border-color:var(--good);color:var(--good-text)">✅ belépésre alkalmas: ${esc(s.phase && s.phase.label)}</span>`
+      : s.phase ? `<span class="badge">🟡 ${esc(s.phase.label)}</span>` : ""}</div>
+    ${ok ? bandSvg({ values: e.values, buy_below: e.buy_below }, e.price) : ""}
+    <dl class="kv"><dt>Ár</dt><dd>${nf(e.price)} ${esc(e.currency || "")}</dd>
+      <dt>Belső érték</dt><dd>${ok ? `${nf(e.values.pesszimista)}–${nf(e.values.optimista)} (bázis ${nf(e.values.bazis)})` : "nem értékelhető – " + esc(e.reason || "")}</dd>
+      ${ok ? `<dt>Ítélet</dt><dd>${esc(e.label)} (${e.discount_pct >= 0 ? "diszkont " + nf(e.discount_pct, 0) : "prémium " + nf(-e.discount_pct, 0)}%)</dd>` : ""}
+      <dt>Pontszám</dt><dd>${s.score != null ? s.score + "/100" : "n/a"}</dd>
+      <dt>F-score</dt><dd>${e.fscore != null ? e.fscore + "/9" : "n/a"}</dd>
+      <dt>ROIC (5 év)</dt><dd>${e.roic_5y == null ? "n/a" : nf(e.roic_5y * 100, 1) + "%"}</dd>
+      <dt>Technikai kép</dt><dd>${e.technical && e.technical.label ? esc(e.technical.label) : "n/a"}</dd></dl>
+    ${(s.failed || []).length ? `<div style="margin-top:8px;font-size:13px"><b>Nem teljesülő feltételek:</b> ${s.failed.map(esc).join("; ")}</div>` : (s.score != null ? `<div style="margin-top:8px;font-size:13px">Minden beállított feltételnek megfelel.</div>` : "")}
+    ${(e.lines || []).length ? `<details class="more"><summary>Teljes értékelés</summary><pre>${esc(e.lines.join("\n"))}</pre></details>` : ""}</div>`;
+}
+
+function bandSvg(v, price) {
+  const vals = v && v.values; if (!vals || price == null) return "";
+  const lo = Math.min(vals.pesszimista, price, v.buy_below || price) * 0.9, hi = Math.max(vals.optimista, price) * 1.08;
+  const x = (val) => 8 + (val - lo) / (hi - lo) * 284;
+  const tick = (val, col, lbl, y) => `<line x1="${x(val)}" x2="${x(val)}" y1="10" y2="30" stroke="${col}" stroke-width="2"/>` +
+    `<text x="${Math.min(Math.max(x(val), 20), 280)}" y="${y}" font-size="10" text-anchor="middle" fill="${css("--ink-2")}">${lbl}</text>`;
+  return `<div class="band"><svg viewBox="0 0 300 46" role="img" aria-label="Ár a belső érték sávban">
+    <rect x="8" y="17" width="284" height="6" rx="3" fill="${css("--surface-2")}"/>
+    <rect x="${x(vals.pesszimista)}" y="15" width="${Math.max(x(vals.optimista) - x(vals.pesszimista), 2)}" height="10" rx="4" fill="${css("--s1")}" opacity="0.35"/>
+    ${tick(vals.bazis, css("--s1"), "bázis", 9)}${v.buy_below ? tick(v.buy_below, css("--good"), "vételi határ", 42) : ""}
+    <circle cx="${x(price)}" cy="20" r="5" fill="${css("--s2")}" stroke="${css("--surface")}" stroke-width="2"/>
+    <text x="${Math.min(Math.max(x(price), 14), 286)}" y="42" font-size="10" text-anchor="middle" fill="${css("--ink")}">${v.buy_below && Math.abs(x(price) - x(v.buy_below)) < 40 ? "" : "ár"}</text>
+  </svg></div>`;
+}
+
+function holdingCard(it) {
+  const v = it.valuation || {}, q = it.quality || {}, t = q.timing || {}, s = it.score;
+  const flags = [];
+  if (t.still_falling) flags.push(`<span class="badge crit">📉 még erős esésben</span>`);
+  if (q.earnings_soon) flags.push(`<span class="badge warn">📅 eredményjelentés ${q.earnings_soon.days} nap múlva</span>`);
+  (q.value_trap || []).forEach((x) => flags.push(`<span class="badge crit">⚠ ${esc(x)}</span>`));
+  (v.warnings || []).forEach((x) => flags.push(`<span class="badge warn">${esc(x)}</span>`));
+  const valTxt = v.status === "ok" ? `${nf(v.values.pesszimista)}–${nf(v.values.optimista)} ${esc(it.currency || "")} (bázis ${nf(v.values.bazis)})` : `nem értékelhető – ${esc(v.reason || "")}`;
+  return `<div class="card"><h3>${esc(it.ticker)}${it.name ? " – " + esc(it.name) : ""}</h3>
+    <div class="ink2" style="font-size:13px">${esc(it.sector || "")}${it.pl_pct != null ? ` · vétel óta <span class="${signCls(it.pl_pct)}">${pct(it.pl_pct, 1)}</span>` : ""}</div>
+    ${v.status === "ok" ? bandSvg(v, it.price) : ""}
+    <dl class="kv">
+      <dt>Ár</dt><dd>${nf(it.price)} ${esc(it.currency || "")}</dd>
+      ${it.value_base != null ? `<dt>Pozíció értéke</dt><dd>${nf(it.value_base)} ${esc(DATA.base_currency)}${it.pl_base != null ? ` (<span class="${signCls(it.pl_base)}">${money(it.pl_base, DATA.base_currency)}</span>)` : ""}</dd>` : ""}
+      <dt>Belső érték</dt><dd>${valTxt}</dd>
+      ${v.expected_return != null ? `<dt>Várható hozam (mai árról)</dt><dd>${v.expected_return_floor ? "≤ " : ""}${nf(v.expected_return * 100, 1)}%/év${((DATA.portfolio || {}).switches || {}).sp500_er != null ? ` <span class="muted">(S&amp;P 500: ${nf(DATA.portfolio.switches.sp500_er * 100, 1)}%)</span>` : ""}</dd>` : ""}
+      ${v.owner ? `<dt>🏗️ Beruházás-igényes</dt><dd>capex ${nf(v.owner.ratio, 1)}× értékcsökkenés${v.owner.values
+        ? `; korrigált belső érték ${nf(v.owner.values.pesszimista)}–${nf(v.owner.values.optimista)} (bázis ${nf(v.owner.values.bazis)}), ${v.owner.discount_pct >= 0 ? "diszkont " + nf(v.owner.discount_pct, 0) : "prémium " + nf(-v.owner.discount_pct, 0)}%` : ""}</dd>` : ""}
+      ${v.status === "ok" ? `<dt>Ítélet</dt><dd>${esc(v.label)} (${v.discount_pct >= 0 ? "diszkont " + nf(v.discount_pct, 0) : "prémium " + nf(-v.discount_pct, 0)}%)</dd>` : ""}
+      <dt>Pontszám</dt><dd>${s && s.score != null ? s.score + "/100" : "n/a"}</dd>
+      <dt>F-score</dt><dd>${q.fscore != null ? q.fscore + "/9" : "n/a"}</dd>
+      <dt>Altman Z</dt><dd>${q.altman_z != null ? nf(q.altman_z) + " (" + esc(q.altman_zone) + ")" : "n/a"}</dd>
+      <dt>ROIC (5 év)</dt><dd>${q.roic_5y == null ? "n/a" : nf(q.roic_5y * 100, 1) + "%"}</dd>
+      <dt>Beárazott növekedés</dt><dd>${pct(v.implied_growth, 1, 100)}${v.fcf_cagr_5y != null ? " (tényleges: " + pct(v.fcf_cagr_5y, 1, 100) + ")" : ""}</dd>
+      <dt>Időzítés</dt><dd>${t.vs_ma200 != null ? "200 napos átlag " + pct(t.vs_ma200, 1, 100) + ", 3 hó " + pct(t.mom_3m, 1, 100) : "n/a"}</dd>
+      <dt>Technikai kép</dt><dd>${t.technical ? esc(t.technical.label) + " (RSI " + nf(t.technical.rsi, 0) + ")" : "n/a"}</dd>
+      <dt>Árfolyam 1/3/5 év</dt><dd>${t.technical ? [t.technical.ret_1y, t.technical.ret_3y, t.technical.ret_5y].map((x) => pct(x, 0, 100)).join(" / ") : "n/a"}</dd>
+      <dt>ROIC-következetesség</dt><dd>${q.consistency && q.consistency.years ? q.consistency.above + "/" + q.consistency.years + " év a küszöb felett" : "n/a"}</dd>
+      <dt>Adósság / FCF</dt><dd>${q.debt_payback == null ? "n/a" : q.debt_payback === 0 ? "nincs adósság" : nf(q.debt_payback, 1) + " év"}</dd>
+      <dt>Visszatartott nyereség</dt><dd>${q.retained && q.retained.ratio != null ? "1 $ → " + nf(q.retained.ratio) + " $" : "n/a"}</dd>
+      <dt>FCF-konverzió</dt><dd>${q.earnings_quality && q.earnings_quality.fcf_conversion != null ? nf(q.earnings_quality.fcf_conversion) : "n/a"}</dd>
+      <dt>Árrés szórása</dt><dd>${q.stability && q.stability.gross_margin_std != null ? nf(q.stability.gross_margin_std * 100, 1) + " pp" : "n/a"}</dd>
+      <dt>Volatilitás / max. esés</dt><dd>${q.risk && q.risk.volatility != null ? nf(q.risk.volatility * 100, 0) + "%/év / " + nf(q.risk.max_drawdown * 100, 0) + "%" : "n/a"}</dd>
+      <dt>EPS-meglepetés</dt><dd>${q.surprises ? q.surprises.beats + "/" + q.surprises.n + " a várakozás felett" : "n/a"}</dd>
+      <dt>Eredményjelentés</dt><dd>${esc(it.earnings || "n/a")}</dd>
+    </dl>
+    <div class="chips">${flags.join("")}</div></div>`;
+}
+
+function candCard(c) {
+  const cls = c.tier === "⭐" ? "star" : "orange";
+  return `<div class="card ${cls}"><h3>${c.tier} ${esc(c.ticker)} – ${esc(c.name || "")}</h3>
+    <div class="ink2" style="font-size:13px">${esc(c.sector || "")} · ${c.tier === "⭐" ? "minden beállított feltételnek megfelel" : "minden feltétel teljesül, de limit felett"}</div>
+    <div style="margin-top:6px">${c.entry_ok ? `<span class="badge" style="border-color:var(--good);color:var(--good-text)">✅ belépésre alkalmas: ${esc(c.phase.label)} (${esc(c.phase.stage)})</span>`
+      : `<span class="badge">🟡 ${esc((c.phase && c.phase.label) || "n/a")} – figyelőlista</span>`}</div>
+    ${bandSvg({ values: c.values, buy_below: c.buy_below }, c.price)}
+    <dl class="kv"><dt>Ár</dt><dd>${nf(c.price)} ${esc(c.currency || "")}${c.fresh_price != null ? ` <span class="muted">(szűrő)</span></dd><dt>Friss ár</dt><dd>${nf(c.fresh_price)} ${esc(c.currency || "")} <span class="muted">(${esc(c.phase_date)})</span>` : ""}</dd>
+      <dt>Belső érték</dt><dd>${nf(c.values.pesszimista)}–${nf(c.values.optimista)} (bázis ${nf(c.values.bazis)})</dd>
+      <dt>Diszkont</dt><dd>${nf(c.discount_pct, 0)}%</dd><dt>Pontszám</dt><dd>${c.score}/100</dd>
+      <dt>F-score</dt><dd>${c.fscore != null ? c.fscore + "/9" : "n/a"}</dd>
+      <dt>Technikai kép</dt><dd>${c.technical && c.technical.label ? esc(c.technical.label) : "n/a"}</dd>
+      <dt>Árfolyam 1/3/5 év</dt><dd>${c.technical ? [c.technical.ret_1y, c.technical.ret_3y, c.technical.ret_5y].map((x) => pct(x, 0, 100)).join(" / ") : "n/a"}</dd></dl>
+    ${(c.limit_breaches || []).length ? `<div style="margin-top:8px;font-size:13px"><b>Limit:</b> ${c.limit_breaches.map(esc).join("; ")}</div>` : ""}
+    ${(c.flags || []).length ? `<div class="chips">${c.flags.map((f) => `<span class="badge">${esc(f)}</span>`).join("")}</div>` : ""}
+    ${c.comment ? `<div class="ink2" style="font-size:13px;margin-top:6px">💬 ${esc(c.comment)}</div>` : ""}</div>`;
+}
+
+const COLS = [["tier", "Szint"], ["ticker", "Ticker"], ["name", "Név"], ["sector", "Szektor"], ["price", "Ár", 1],
+  ["bazis", "Belső érték (bázis)", 1], ["discount_pct", "Diszkont %", 1], ["er", "Várható hozam %", 1], ["score", "Pontszám", 1], ["fscore", "F-score", 1],
+  ["trend", "Technikai kép"], ["entry", "Belépés"], ["ret5", "5 év %", 1], ["flags", "Jelzések"]];
+let sortKey = "score", sortDir = -1, tierSel = "mind";
+function renderTable(C) {
+  $("candEmpty").classList.toggle("hidden", C.length > 0);
+  $("tierFilter").innerHTML = ["mind", "✅ belépésre alkalmas", "⭐", "🔶", "💎 alulértékelt", "🌱 nem-tech lendület", "egyéb"].map((t) => `<button type="button" class="chip" aria-pressed="${t === tierSel}" data-t="${t}">${t}</button>`).join("");
+  $("tierFilter").querySelectorAll("button").forEach((b) => b.onclick = () => { tierSel = b.dataset.t; renderTable(C); });
+  $("candTable").querySelector("thead").innerHTML = "<tr>" + COLS.map(([k, l, n]) => `<th class="${n ? "num" : ""}" data-k="${k}">${l}${sortKey === k ? (sortDir < 0 ? " ▼" : " ▲") : ""}</th>`).join("") + "</tr>";
+  $("candTable").querySelectorAll("th").forEach((th) => th.onclick = () => { const k = th.dataset.k; sortDir = sortKey === k ? -sortDir : -1; sortKey = k; renderTable(C); });
+  const q = ($("tableSearch").value || "").toLowerCase();
+  const rows = C.map((c) => ({ ...c, bazis: c.values && c.values.bazis, er: c.expected_return != null ? c.expected_return * 100 : null, trend: (c.technical && c.technical.label) || "",
+      entry: c.entry_ok ? "✅ alkalmas" : (c.watch ? "🟡 figyelt" : ""),
+      ret5: c.technical && c.technical.ret_5y != null ? c.technical.ret_5y * 100 : null,
+      flags: [c.buffett ? "🧓 Buffett-követés" : "", c.undervalued && c.tier === "egyéb" ? "💎 alulértékelt" : "", ...(c.flags || [])].filter(Boolean).join(", ") }))
+    .filter((c) => tierSel === "mind" || (tierSel === "🌱 nem-tech lendület" ? c.nontech_momentum : tierSel === "💎 alulértékelt" ? c.undervalued
+      : tierSel === "✅ belépésre alkalmas" ? c.entry_ok : c.tier === tierSel))
+    .filter((c) => !q || [c.ticker, c.name, c.sector].join(" ").toLowerCase().includes(q))
+    .sort((a, b) => { const x = a[sortKey], y = b[sortKey]; return (x == null) - (y == null) || (x > y ? 1 : x < y ? -1 : 0) * sortDir; });
+  $("candTable").querySelector("tbody").innerHTML = rows.map((c) => `<tr><td>${c.tier}</td><td>${esc(c.ticker)}</td><td>${esc(c.name || "")}</td><td>${esc(c.sector || "")}</td>
+    <td class="num">${nf(c.price)}</td><td class="num">${nf(c.bazis)}</td><td class="num">${nf(c.discount_pct, 0)}</td><td class="num">${c.er == null ? "n/a" : nf(c.er, 1)}</td><td class="num">${c.score ?? "n/a"}</td><td class="num">${c.fscore ?? "n/a"}</td><td>${esc(c.trend)}</td><td>${esc(c.entry)}</td><td class="num">${c.ret5 == null ? "n/a" : nf(c.ret5, 0)}</td><td>${esc(c.flags)}</td></tr>`).join("")
+    || `<tr><td colspan="${COLS.length}" class="muted">Ebben a szűrőben most nincs papír${tierSel === "⭐" ? " (a ⭐ szint a limiten belüli, minden feltételnek megfelelő jelölt; a limit felettiek 🔶)" : tierSel === "🌱 nem-tech lendület" ? " (a lendület-lista a tartósan emelkedő nem-tech papírokat mutatja; ez a hét üres)" : ""}.</td></tr>`;
+}
+$("tableSearch").addEventListener("input", () => DATA && renderTable((DATA.screener && DATA.screener.candidates) || []));
+
+(async function start() {
+  try { blob = await loadBlob(); } catch (e) { $("err").textContent = "Az adatfájl nem érhető el. Próbáld később."; return; }
+  if (await tryRemembered()) show();
+})();
+</script>
+</body>
+</html>
